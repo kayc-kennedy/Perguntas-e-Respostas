@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const connection = require("./database/database");
 //Executando o arquivo peguntas.js, cria a tabela de perguntas
 const pergunta = require("./database/pergunta")
+const resposta = require("./database/resposta");
 
 //Estabelecendo conexão - Promise 
 connection
@@ -73,9 +74,33 @@ app.get('/pergunta/:id', (req, res) =>{
         where: {id: id}
     }).then(pergunta =>{// Se achar o ID, esse bloco será executado
         if(pergunta != undefined){
-            res.render("pergunta");    
+            
+            resposta.findAll({ // Buscando as respostas de cada pergunta e ordenando
+                where: {perguntaId: pergunta.id}, 
+                order: [
+                    ['id', 'desc']
+                ]
+
+            }).then(respostas => {
+                    res.render('pergunta',{//Pego as perguntas de cada resposta e apresento as duas juntas na pagina principal
+                        pergunta:pergunta,
+                        respostas: respostas
+                    });
+                });
         }else{
             res.redirect("/")
         }
     })
+});
+
+app.post('/responder', (req, res) =>{
+    let corpo = req.body.corpo;
+    let perguntaId = req.body.pergunta;
+
+    resposta.create({// Inserindo dados na tabela respostas
+        corpo: corpo,
+        perguntaId:perguntaId
+    }).then( () =>{
+        res.redirect('/pergunta/' + perguntaId);
+    }); 
 });
